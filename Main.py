@@ -1,32 +1,53 @@
-# Import necessary modules
 from dotenv import load_dotenv
 import os
 import requests
+import tkinter as tk
+from PIL import Image, ImageTk
+from io import BytesIO
 
-# Load environment variables from the .env file
 load_dotenv()
 
-# Access the API key from the environment
 api_key = os.getenv('API_KEY')
 
-# Base URL of the Cat API
-url = "https://api.thecatapi.com/v1/images/search"
+# Function to fetch a random cat image from the Cat API
+def get_cat_image():
+    url = "https://api.thecatapi.com/v1/images/search"
+    headers = {
+        "x-api-key": api_key
+    }
+    
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        data = response.json()
+        img_url = data[0]['url']
+        return img_url
+    else:
+        return None
 
-# Headers including the API key for authentication
-headers = {
-    "x-api-key": api_key
-}
+def update_cat_image():
+    img_url = get_cat_image()
+    if img_url:
+        # Fetch the image from the URL
+        img_response = requests.get(img_url)
+        img_data = img_response.content
+        
+        # Convert the image to a format Tkinter can use
+        img = Image.open(BytesIO(img_data))
+        img = img.resize((400, 400)) 
+        img_tk = ImageTk.PhotoImage(img)
+        
+        cat_image_label.config(image=img_tk)
+        cat_image_label.image = img_tk 
 
-# Make a request to the Cat API
-response = requests.get(url, headers=headers)
+root = tk.Tk()
+root.title("Random Cat Image Generator")
 
-# Check if the request was successful
-if response.status_code == 200:
-    # Parse the response JSON
-    data = response.json()
+cat_image_label = tk.Label(root)
+cat_image_label.pack(padx=20, pady=20)
 
-    # Print the cat image URL from the response
-    print("Here is a random cat image URL:", data[0]['url'])
-else:
-    # Print an error message if the request failed
-    print(f"Failed to retrieve data: {response.status_code}")
+generate_button = tk.Button(root, text="Generate Random Cat Image", command=update_cat_image)
+generate_button.pack(pady=10)
+
+update_cat_image()
+
+root.mainloop()
